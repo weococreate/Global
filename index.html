@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全球主題儀表板｜WEOCO Global</title>
+<style>
+  :root{
+    --bg:#f5f7f9; --card:#ffffff; --ink:#1e2833; --sub:#647380; --line:#e4e9ed;
+    --teal:#2a9d8f; --teal-d:#1f7a70; --blue:#3b6fb0; --amber:#e2963a;
+    --shadow:0 1px 3px rgba(20,40,60,.05),0 8px 22px rgba(20,40,60,.05);
+  }
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#12171c;--card:#1b2229;--ink:#e6ecf1;--sub:#94a3af;--line:#2a333c;}
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px 70px}
+
+  header{text-align:center;padding:56px 0 20px}
+  header .badge{display:inline-block;font-size:12px;font-weight:600;letter-spacing:2px;color:var(--teal-d);background:rgba(42,157,143,.12);padding:5px 14px;border-radius:20px;margin-bottom:16px}
+  header h1{font-size:30px;font-weight:800;letter-spacing:1px}
+  header .sub{color:var(--sub);font-size:15px;margin-top:12px;max-width:600px;margin-left:auto;margin-right:auto}
+
+  .group-title{font-size:14px;font-weight:700;color:var(--sub);letter-spacing:1.5px;margin:38px 0 14px;display:flex;align-items:center;gap:8px}
+  .group-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  .card{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 22px 20px;text-decoration:none;color:inherit;transition:border-color .16s,transform .16s,box-shadow .16s;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--teal))}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--accent,var(--teal))}
+  .card .top{display:flex;align-items:flex-start;gap:12px}
+  .card .icon{font-size:30px;line-height:1}
+  .card .name{font-size:17px;font-weight:750;margin-bottom:2px}
+  .card .en{font-size:11px;color:var(--sub);letter-spacing:.5px;font-weight:600}
+  .card .desc{font-size:13px;color:var(--sub);margin:12px 0 14px;flex:1}
+  .card .stat{display:flex;align-items:baseline;gap:7px;margin-bottom:14px}
+  .card .stat .n{font-size:20px;font-weight:800;color:var(--accent,var(--teal))}
+  .card .stat .l{font-size:12px;color:var(--sub)}
+  .card .go{font-size:13px;color:var(--accent,var(--teal));font-weight:700}
+
+  footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--sub);line-height:1.9}
+  footer .help{background:rgba(59,111,176,.08);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:var(--ink)}
+  footer .help a{color:var(--blue);font-weight:700;text-decoration:none}
+  footer .help a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">WEOCO · GLOBAL</div>
+    <h1>全球主題儀表板</h1>
+    <p class="sub">高山、音樂、溫泉——不同主題的一頁式互動地圖與儀表板，資料皆整理自公開來源。點卡片進入各主題。</p>
+  </header>
+
+  <div class="group-title">🗺️ 地圖與儀表板</div>
+  <div class="grid">
+    <a class="card" href="GlobalPeaks.html" style="--accent:#6b7f8c">
+      <div class="top"><span class="icon">🏔️</span><span><span class="name">全球高山地圖</span><br><span class="en">GlobalPeaks</span></span></div>
+      <div class="desc">全世界海拔 3,000 公尺以上的 13,576 座山峰互動地圖（Wikidata，CC0）：世界地圖依海拔六級著色、可多選過濾，點擊看中英名／海拔／突起度／所屬國家與山脈。</div>
+      <div class="stat"><span class="n">13,576</span><span class="l">座山峰 · 3000m 以上</span></div>
+      <div class="go">進入 →</div>
+    </a>
+    <a class="card" href="JapanOnsen.html" style="--accent:#d1495b">
+      <div class="top"><span class="icon">♨️</span><span><span class="name">日本溫泉地圖</span><br><span class="en">JapanOnsen</span></span></div>
+      <div class="desc">日本全國 1,882 個溫泉地互動地圖（Wikidata＋OSM＋日文維基）：十種療養泉泉質上色、泉温／pH／官網，60 座名湯日歸入浴料金逐座官方查證，含知名度榜與泉質圖鑑。</div>
+      <div class="stat"><span class="n">1,882</span><span class="l">溫泉地 · 60 名湯料金</span></div>
+      <div class="go">進入 →</div>
+    </a>
+    <a class="card" href="KpopTracker.html" style="--accent:#d6558a">
+      <div class="top"><span class="icon">🎤</span><span><span class="name">韓團追蹤儀表板</span><br><span class="en">KpopTracker</span></span></div>
+      <div class="desc">給粉絲的一頁式韓團追蹤站：回歸行事曆（帶倒數）、MV 觀看數與破億進度、Melon／Billboard／Spotify 三榜快照、音放本週一位與年度奪冠排行、台灣演唱會資訊。</div>
+      <div class="stat"><span class="n">217</span><span class="l">回歸行事曆 · 三榜快照</span></div>
+      <div class="go">進入 →</div>
+    </a>
+  </div>
+
+  <footer>
+    <div class="help">🎿 找 <b>日本雪場地圖</b>？在雪季站 → <a href="https://weococreate.github.io/Snow/JapanPowder.html">weococreate.github.io/Snow/JapanPowder.html</a></div>
+    以上各地圖與儀表板資料皆整理自公開來源（Wikidata、OpenStreetMap、日文維基、各官方統計等），僅供參考，不構成任何專業建議。各站標示資料年份與來源。
+  </footer>
+</div>
+</body>
+</html>
