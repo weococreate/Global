@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>利率監控台 GlobalRates</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
+<script src="globalrates-data.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --panel:#ffffff; --panel2:#f7f8fa; --line:#e2e6ee;
+    --ink:#1f2430; --sub:#657081; --accent:#4f46e5;
+    --up:#b45309; --down:#0e7490;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;}
+  header{padding:24px 20px 12px;border-bottom:1px solid var(--line);}
+  h1{margin:0 0 4px;font-size:22px;}
+  .sub{color:var(--sub);font-size:13px;}
+  .tabs{display:flex;gap:8px;padding:14px 20px 0;flex-wrap:wrap;}
+  .tab{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--sub);font-size:13px;cursor:pointer;font-weight:600;}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  main{padding:16px 20px 40px;max-width:1200px;margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px;}
+  .card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);}
+  .card .cur{font-size:13px;color:var(--sub);display:flex;justify-content:space-between;}
+  .card .rate{font-size:28px;font-weight:700;margin:6px 0 2px;}
+  .card .change{font-size:12px;color:var(--sub);}
+  .change .dir-up{color:var(--up);font-weight:700;}
+  .change .dir-down{color:var(--down);font-weight:700;}
+  .change .dir-flat{color:var(--sub);}
+  .no-data{color:var(--sub);font-style:italic;font-size:13px;}
+  table{border-collapse:collapse;width:100%;margin-top:10px;font-size:13px;}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:right;}
+  th:first-child,td:first-child{text-align:left;}
+  th{color:var(--sub);font-weight:600;background:var(--panel2);}
+  .section-title{font-size:15px;font-weight:700;margin:26px 0 4px;}
+  .chart-wrap{position:relative;height:340px;margin-top:10px;}
+  .chart-wrap.tall{height:420px;}
+  select,input[type=date]{padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink);}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+  .currency-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .curr-btn{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--sub);font-size:12px;cursor:pointer;font-weight:600;}
+  .curr-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .stat-line{margin-top:4px;}
+  .badge-inv{display:inline-block;background:#fee2e2;color:#991b1b;font-size:11px;padding:2px 8px;border-radius:999px;margin-left:6px;}
+  .disclaimer{margin-top:36px;padding:14px 16px;background:var(--panel2);border-radius:10px;font-size:12px;color:var(--sub);line-height:1.7;}
+  footer{padding:20px;text-align:center;color:var(--sub);font-size:12px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>利率監控台 · GlobalRates</h1>
+  <div class="sub" id="asof-line">資料日期載入中…</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-view="overview">總覽</div>
+  <div class="tab" data-view="policy">政策利率</div>
+  <div class="tab" data-view="yields">殖利率曲線</div>
+  <div class="tab" data-view="speeches">央行發言</div>
+  <div class="tab" data-view="macro">總經與判讀</div>
+</div>
+
+<main>
+  <!-- 總覽 -->
+  <section class="view active" id="view-overview">
+    <div class="section-title">12 幣別政策利率</div>
+    <div class="card-grid" id="overview-cards"></div>
+    <div class="section-title">美德日 10Y 公債殖利率（最新）</div>
+    <div class="card-grid" id="overview-yield-cards"></div>
+  </section>
+
+  <!-- 政策利率 -->
+  <section class="view" id="view-policy">
+    <div class="section-title">政策利率走勢圖</div>
+    <div class="controls">
+      <label>幣別：</label>
+      <div class="currency-btns" id="policy-currency-buttons"></div>
+    </div>
+    <div class="controls">
+      <label>期間：</label>
+      <input type="date" id="policy-date-start">
+      <span class="sub">至</span>
+      <input type="date" id="policy-date-end">
+      <span class="sub" style="font-size:12px;">（可複選幣別比較，預設全選；可縮小起迄日期範圍）</span>
+    </div>
+    <div class="chart-wrap tall"><canvas id="policy-history-chart"></canvas></div>
+
+    <div class="section-title">升降息事件表（倒序）</div>
+    <table id="policy-events-table">
+      <thead><tr><th>幣別</th><th>央行</th><th>變動日期</th><th>方向</th><th>調幅</th><th>調後利率</th><th>距今天數</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- 殖利率曲線 -->
+  <section class="view" id="view-yields">
+    <div class="section-title">美德日公債殖利率曲線（最新交易日）</div>
+    <div class="chart-wrap"><canvas id="yield-curve-chart"></canvas></div>
+
+    <div class="section-title">期限利差走勢（2s10s／10s30s，近 5 年）</div>
+    <div class="controls">
+      <label>國家：</label>
+      <select id="spread-country-select">
+        <option value="US">美國</option>
+        <option value="DE">德國</option>
+        <option value="JP">日本</option>
+      </select>
+      <label>利差：</label>
+      <select id="spread-type-select">
+        <option value="2s10s">2s10s</option>
+        <option value="10s30s">10s30s</option>
+      </select>
+      <span id="inversion-badge"></span>
+    </div>
+    <div class="chart-wrap"><canvas id="spread-chart"></canvas></div>
+  </section>
+
+  <!-- 央行發言 -->
+  <section class="view" id="view-speeches">
+    <div class="section-title">近期央行官員發言摘要（近 14 天，12 幣別對應央行）</div>
+    <div class="controls">
+      <label>幣別：</label>
+      <select id="speech-currency-select"><option value="">全部</option></select>
+    </div>
+    <div class="disclaimer" style="margin:0 0 10px;font-weight:600;">⚠ 以下重點摘要、引述與鷹／鴿標記由 AI（Claude）依原文自動產生，僅供參考、可能有誤；內容以各央行原文為準（每則下方有原文連結）。</div>
+    <div id="speeches-list"></div>
+    <div class="disclaimer" style="margit-top:8px;">
+      摘要來源：BIS 央行官員發言資料庫（cbspeeches），涵蓋本頁 12 幣別對應央行本身之發言（不含同一貨幣區內個別國家央行，如歐元區僅計 ECB）。鷹／鴿標記為摘要判讀，非官方立場；典禮式／學術式／監理式發言與利率決策無直接關聯者標記為「中性（非政策）」，不勉強套用鷹鴿標籤。點入原文連結可查全文。
+    </div>
+  </section>
+
+  <!-- 總經與判讀 -->
+  <section class="view" id="view-macro">
+    <div class="section-title">規則型提示</div>
+    <div id="macro-hints"></div>
+
+    <div class="section-title">12 幣別對美元政策利率利差矩陣（Carry 視角）</div>
+    <div class="sub">正值＝該幣別政策利率高於美元（bp）；|利差| ≥ <span id="carry-threshold-label"></span> bp 標記為極端。</div>
+    <table id="spread-matrix-table">
+      <thead><tr><th>幣別</th><th>對美元利差</th><th>資料日</th><th>判讀</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="section-title">殖利率變動（1 週／1 月／YTD，bp）</div>
+    <div class="controls">
+      <label>國家：</label>
+      <select id="yc-country-select">
+        <option value="US">美國</option>
+        <option value="DE">德國</option>
+        <option value="JP">日本</option>
+      </select>
+    </div>
+    <table id="yield-changes-table">
+      <thead><tr><th>年期</th><th>最新殖利率</th><th>1 週</th><th>1 月</th><th>YTD</th><th>資料日</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="section-title">美國總經數據（FRED）</div>
+    <div id="macro-fred"></div>
+  </section>
+
+  <div class="disclaimer">
+    資料來源：BIS 央行政策利率統計（約一週時滯）、美國財政部／德國聯邦銀行／日本財務省公債殖利率、中央銀行重貼現率。新加坡（SGD）因 MAS 貨幣政策工具改採 S$NEER 匯率機制、無傳統政策利率，本頁暫未提供即時數值，請逕查 MAS 官網。以上皆為各國央行／財政部公開統計，經自動彙整可能有解析誤差或未及更新，任何引用請回查官方原文。本頁僅供資金管理參考，不構成任何專業建議、非投資建議、非招攬，亦不代表任何機關或金融機構立場。
+  </div>
+</main>
+
+<footer>GlobalRates · 資料每日更新，線上版隨每日管線同步 · 產生時間見頁首</footer>
+
+<script>
+const D = (typeof GLOBALRATES_DATA !== 'undefined') ? GLOBALRATES_DATA : null;
+const TENOR_ORDER = ['1Y','2Y','5Y','10Y','20Y','30Y'];
+const COUNTRY_NAME = {US:'美國', DE:'德國', JP:'日本'};
+const DIR_ARROW = {up:'▲', down:'▼', flat:'—'};
+
+function fmtPct(v, digits=2){ return (v===null || v===undefined) ? '—' : v.toFixed(digits) + '%'; }
+function fmtBp(v){ return (v===null || v===undefined) ? '—' : (v>=0?'+':'') + v.toFixed(0) + 'bp'; }
+function fmtBps(v){ return (v===null || v===undefined) ? '—' : (v>=0?'+':'') + Math.round(v) + 'bps'; }
+
+// 由每日利率序列反推「變動點」（rate 與前一筆不同的日期），供今年以來累計與連續升降息統計使用
+function getChangepoints(cur){
+  const hist = (D.policy_history && D.policy_history[cur]) || [];
+  const pts = [];
+  let prev = null;
+  for(const r of hist){
+    const rate = Math.round(r.rate*1000)/1000;
+    if(prev !== null && Math.abs(rate-prev) > 0.001){
+      pts.push({date:r.date, delta: Math.round((rate-prev)*1000)/1000});
+    }
+    prev = rate;
+  }
+  return pts;
+}
+function ytdBps(cur){
+  const yearStart = `${new Date().getFullYear()}-01-01`;
+  const pts = getChangepoints(cur).filter(p => p.date >= yearStart);
+  if(!pts.length) return 0;
+  return Math.round(pts.reduce((s,p)=>s+p.delta,0) * 100);
+}
+function streakInfo(cur){
+  const pts = getChangepoints(cur);
+  if(!pts.length) return null;
+  const dir = pts[pts.length-1].delta > 0 ? 'up' : 'down';
+  let sum = 0, count = 0;
+  for(let i=pts.length-1;i>=0;i--){
+    const pdir = pts[i].delta > 0 ? 'up' : 'down';
+    if(pdir !== dir) break;
+    sum += pts[i].delta; count++;
+  }
+  return { dir, bps: Math.round(sum*100), count };
+}
+
+if(!D){
+  document.querySelector('main').innerHTML = '<p style="color:#991b1b;">資料檔 globalrates-data.js 載入失敗，請確認檔案存在同目錄下。</p>';
+} else {
+  document.getElementById('asof-line').textContent = `資料產生時間：${D.generated_at}（台北時間）`;
+
+  // ── 總覽：政策利率卡片 ──
+  const cardsEl = document.getElementById('overview-cards');
+  cardsEl.innerHTML = D.policy_summary.map(p => {
+    if(!p.has_live_data){
+      return `<div class="card"><div class="cur"><span>${p.name_zh}</span><span>${p.currency}</span></div>
+        <div class="no-data">暫無即時資料（${p.central_bank}）</div></div>`;
+    }
+    const c = p.last_change;
+    const dirClass = c ? (c.direction==='up'?'dir-up':'dir-down') : '';
+    const dirTxt = c ? `${DIR_ARROW[c.direction]} ${Math.round(Math.abs(c.delta)*100)}bps · ${c.date}（${c.days_since} 天前）` : '無歷史變動紀錄';
+    const ytd = ytdBps(p.currency);
+    const ytdTxt = ytd===0 ? '持平' : `${DIR_ARROW[ytd>0?'up':'down']} ${Math.abs(ytd)}bps`;
+    const streak = streakInfo(p.currency);
+    const streakTxt = streak ? `${streak.dir==='up'?'連續升息':'連續降息'} ${streak.count} 次共 ${fmtBps(streak.bps)}` : '—';
+    return `<div class="card">
+      <div class="cur"><span>${p.name_zh}</span><span>${p.currency}</span></div>
+      <div class="rate">${fmtPct(p.current_rate, 3)}</div>
+      <div class="change"><span class="${dirClass}">${dirTxt}</span></div>
+      <div class="sub stat-line">${p.central_bank} · 資料日 ${p.as_of}</div>
+      <div class="sub stat-line">今年以來：${ytdTxt}　｜　${streakTxt}</div>
+    </div>`;
+  }).join('');
+
+  // ── 總覽：殖利率摘要卡 ──
+  const yc = D.yield_curves;
+  const yCardsEl = document.getElementById('overview-yield-cards');
+  yCardsEl.innerHTML = Object.keys(COUNTRY_NAME).map(country => {
+    const info = yc[country];
+    if(!info) return '';
+    const y10 = info.curve.find(x => x.tenor==='10Y');
+    return `<div class="card">
+      <div class="cur"><span>${COUNTRY_NAME[country]} 10Y</span><span>${country}</span></div>
+      <div class="rate">${y10 ? fmtPct(y10.yield) : '—'}</div>
+      <div class="sub">資料日 ${info.as_of}</div>
+    </div>`;
+  }).join('');
+
+  // ── 政策利率分頁：幣別篩選器（按鈕，可複選）＋起迄日期 ──
+  // 多數幣別歷史資料自 2023 年起才連續完整（部分幣別 2023 年以前資料缺漏或不連續），圖表一律不顯示、也不開放選取 2023 年以前的日期
+  const CHART_MIN_DATE = '2023-01-01';
+  const liveCurrencies = D.policy_summary.filter(p => p.has_live_data);
+  const DEFAULT_SELECTED = ['USD', 'TWD'];
+  const selectedCurrencies = new Set(liveCurrencies.map(p => p.currency).filter(c => DEFAULT_SELECTED.includes(c)));
+  const currButtonsEl = document.getElementById('policy-currency-buttons');
+  currButtonsEl.innerHTML = liveCurrencies
+    .map(p => `<button type="button" class="curr-btn${selectedCurrencies.has(p.currency) ? ' active' : ''}" data-currency="${p.currency}">${p.name_zh}（${p.currency}）</button>`).join('');
+  currButtonsEl.querySelectorAll('.curr-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cur = btn.dataset.currency;
+      if(selectedCurrencies.has(cur)){ selectedCurrencies.delete(cur); btn.classList.remove('active'); }
+      else { selectedCurrencies.add(cur); btn.classList.add('active'); }
+      renderPolicyHistory();
+    });
+  });
+
+  let histMaxDate = null;
+  Object.values(D.policy_history).forEach(arr => (arr||[]).forEach(r => {
+    if(!histMaxDate || r.date > histMaxDate) histMaxDate = r.date;
+  }));
+  const dateStartEl = document.getElementById('policy-date-start');
+  const dateEndEl = document.getElementById('policy-date-end');
+  dateStartEl.value = CHART_MIN_DATE;
+  dateStartEl.min = CHART_MIN_DATE;
+  dateEndEl.value = histMaxDate;
+  dateEndEl.min = CHART_MIN_DATE;
+  dateStartEl.addEventListener('change', renderPolicyHistory);
+  dateEndEl.addEventListener('change', renderPolicyHistory);
+
+  let policyChart = null;
+  function renderPolicyHistory(){
+    const selected = liveCurrencies.map(p => p.currency).filter(c => selectedCurrencies.has(c));
+    const chartMinMs = Date.parse(CHART_MIN_DATE);
+    const startMs = Math.max(dateStartEl.value ? Date.parse(dateStartEl.value) : chartMinMs, chartMinMs);
+    const rightEdgeMs = Math.min(dateEndEl.value ? Date.parse(dateEndEl.value) : Date.parse(histMaxDate), Date.parse(histMaxDate));
+    const colors = ['#4f46e5','#0e7490','#b45309','#7c3aed','#059669','#dc2626','#0891b2','#ca8a04','#be185d','#4338ca','#15803d','#9333ea'];
+    const datasets = selected.map((cur, i) => {
+      const rows = (D.policy_history[cur]||[])
+        .filter(r => { const t = Date.parse(r.date); return t >= startMs && t <= rightEdgeMs; })
+        .map(r => ({x: Date.parse(r.date), y:r.rate}));
+      // 部分幣別（如台灣）資料只在利率變動時才新增一筆，變動後利率未變就沒有後續資料點；
+      // 若最後一筆資料早於圖表右緣，補一個同利率的點延伸到右緣，避免曲線末端留白造成誤讀成「無資料」
+      if(rows.length && rows[rows.length-1].x < rightEdgeMs){
+        rows.push({x: rightEdgeMs, y: rows[rows.length-1].y});
+      }
+      return {
+        label: cur,
+        data: rows,
+        borderColor: colors[i%colors.length],
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        pointRadius: 0,
+        stepped: true,
+      };
+    });
+    if(policyChart) policyChart.destroy();
+    policyChart = new Chart(document.getElementById('policy-history-chart'), {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { type: 'linear', grid: { color: '#eef0f4' },
+               ticks: { callback: v => new Date(v).toISOString().slice(0,7) } },
+          y: { title: { display: true, text: '%' }, grid: { color: '#eef0f4' },
+               ticks: { callback: v => v.toFixed(2) + '%' } },
+        },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                   tooltip: { callbacks: { title: items => new Date(items[0].parsed.x).toISOString().slice(0,10) } } },
+      }
+    });
+  }
+
+  // ── 政策利率分頁：事件表 ──
+  const eventsBody = document.querySelector('#policy-events-table tbody');
+  const events = D.policy_summary
+    .filter(p => p.has_live_data && p.last_change)
+    .map(p => ({...p.last_change, currency: p.currency, name_zh: p.name_zh, central_bank: p.central_bank, after_rate: p.current_rate}))
+    .sort((a,b) => b.date.localeCompare(a.date));
+  eventsBody.innerHTML = events.map(e => `<tr>
+    <td>${e.name_zh}（${e.currency}）</td>
+    <td>${e.central_bank}</td>
+    <td>${e.date}</td>
+    <td class="${e.direction==='up'?'dir-up':'dir-down'}">${DIR_ARROW[e.direction]} ${e.direction==='up'?'升息':'降息'}</td>
+    <td>${fmtBps(Math.round(e.delta*100))}</td>
+    <td>${fmtPct(e.after_rate,3)}</td>
+    <td>${e.days_since}</td>
+  </tr>`).join('');
+
+  // ── 殖利率曲線分頁：三國最新曲線 ──
+  const curveDatasets = Object.keys(COUNTRY_NAME).filter(c => yc[c]).map((country, i) => {
+    const colors = {US:'#4f46e5', DE:'#0e7490', JP:'#b45309'};
+    return {
+      label: `${COUNTRY_NAME[country]}（${yc[country].as_of}）`,
+      data: TENOR_ORDER.map(t => {
+        const m = yc[country].curve.find(x => x.tenor===t);
+        return m ? m.yield : null;
+      }),
+      borderColor: colors[country],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.15,
+    };
+  });
+  new Chart(document.getElementById('yield-curve-chart'), {
+    type: 'line',
+    data: { labels: TENOR_ORDER, datasets: curveDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { title: { display: true, text: '%' }, grid: { color: '#eef0f4' } }, x: { grid: { display: false } } },
+      plugins: { legend: { position: 'bottom' } },
+    }
+  });
+
+  // ── 殖利率曲線分頁：期限利差走勢 ──
+  const countrySel = document.getElementById('spread-country-select');
+  const typeSel = document.getElementById('spread-type-select');
+  let spreadChart = null;
+  function renderSpread(){
+    const country = countrySel.value, type = typeSel.value;
+    const rows = (D.spreads[country] && D.spreads[country][type]) || [];
+    const latestInverted = rows.length && rows[rows.length-1].inverted;
+    document.getElementById('inversion-badge').innerHTML = latestInverted
+      ? `<span class="badge-inv">目前倒掛 ${fmtBp(rows[rows.length-1].spread_bp)}</span>` : '';
+    if(spreadChart) spreadChart.destroy();
+    spreadChart = new Chart(document.getElementById('spread-chart'), {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: `${COUNTRY_NAME[country]} ${type}`,
+          data: rows.map(r => ({x: Date.parse(r.date), y:r.spread_bp})),
+          borderColor: '#4f46e5', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { type: 'linear', grid: { color: '#eef0f4' },
+               ticks: { callback: v => new Date(v).toISOString().slice(0,7) } },
+          y: { title: { display: true, text: 'bp' }, grid: { color: '#eef0f4' } },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: items => new Date(items[0].parsed.x).toISOString().slice(0,10) } },
+        },
+      }
+    });
+  }
+  countrySel.addEventListener('change', renderSpread);
+  typeSel.addEventListener('change', renderSpread);
+
+  renderPolicyHistory();
+  renderSpread();
+
+  // ── 央行發言分頁 ──
+  const speeches = D.speeches || [];
+  const speechCurSel = document.getElementById('speech-currency-select');
+  const speechCurrencies = [...new Set(speeches.map(s => s.currency))].sort();
+  speechCurSel.innerHTML = '<option value="">全部</option>' +
+    speechCurrencies.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  const TAG_COLOR = {
+    '偏鷹': '#991b1b', '偏鴿': '#1e40af', '中性': '#6b7280', '中性（非政策）': '#9ca3af',
+  };
+  function tagColor(tag){
+    for(const k in TAG_COLOR){ if(tag && tag.startsWith(k)) return TAG_COLOR[k]; }
+    return '#6b7280';
+  }
+
+  function renderSpeeches(){
+    const filter = speechCurSel.value;
+    const list = filter ? speeches.filter(s => s.currency === filter) : speeches;
+    const el = document.getElementById('speeches-list');
+    if(list.length === 0){
+      el.innerHTML = '<p class="sub">近 14 天內查無符合條件的央行發言。</p>';
+      return;
+    }
+    el.innerHTML = list.map(s => `
+      <div class="card" style="margin-bottom:10px;">
+        <div class="cur"><span><b>${s.currency}</b> · ${s.institution}</span><span>${s.date}</span></div>
+        <div style="font-weight:600;margin:6px 0 4px;">${s.speaker}：${s.title}</div>
+        <div style="margin-bottom:6px;">${s.point}</div>
+        <div style="font-size:12px;color:${tagColor(s.tag)};font-weight:600;">${s.tag}</div>
+        <div class="sub" style="font-size:12px;font-style:italic;margin-top:4px;">"${s.quote}"</div>
+        <div class="sub" style="font-size:11px;margin-top:4px;">AI 摘要 · <a href="${s.url}" target="_blank" rel="noopener">原文連結</a></div>
+      </div>`).join('');
+  }
+  speechCurSel.addEventListener('change', renderSpeeches);
+  renderSpeeches();
+
+  // ── 總經與判讀分頁 ──
+  const nameByCur = {};
+  D.policy_summary.forEach(p => { nameByCur[p.currency] = p.name_zh; });
+  const TH = D.thresholds || {};
+  document.getElementById('carry-threshold-label').textContent = TH.carry_extreme_bp ?? 300;
+
+  // 規則型提示（中性描述，門檻由資料管線 THRESHOLDS 設定並隨資料檔帶入）
+  const hints = D.rule_hints || [];
+  document.getElementById('macro-hints').innerHTML = hints.length
+    ? hints.map(h => `<div class="card" style="margin-bottom:8px;border-left:4px solid ${h.type==='inversion'?'#991b1b':'#b45309'};">
+        <div style="font-size:13px;">${h.text}</div>
+      </div>`).join('') +
+      `<div class="sub" style="font-size:12px;margin-top:4px;">規則門檻：期限利差連續倒掛 ≥ ${TH.inversion_alert_min_days ?? 20} 個交易日、政策利率對美元利差 ±${TH.carry_extreme_bp ?? 300} bp 視為極端。中性描述，非投資建議。</div>`
+    : '<p class="sub">目前無觸發中的規則提示。</p>';
+
+  // 12 幣別對美元政策利率利差矩陣
+  const matrix = D.policy_spread_matrix || [];
+  document.querySelector('#spread-matrix-table tbody').innerHTML = matrix.map(r => {
+    if(r.spread_bp === null || r.spread_bp === undefined){
+      return `<tr><td>${nameByCur[r.currency]||''}（${r.currency}）</td><td>—</td><td>—</td><td class="sub">暫無即時資料</td></tr>`;
+    }
+    const dirClass = r.spread_bp > 0 ? 'dir-up' : (r.spread_bp < 0 ? 'dir-down' : 'dir-flat');
+    return `<tr>
+      <td>${nameByCur[r.currency]||''}（${r.currency}）</td>
+      <td class="${dirClass}">${fmtBp(r.spread_bp)}</td>
+      <td>${r.as_of}</td>
+      <td>${r.is_extreme ? '<span class="badge-inv">極端</span>' : ''}</td>
+    </tr>`;
+  }).join('');
+
+  // 殖利率 1週/1月/YTD 變動
+  const ycSel = document.getElementById('yc-country-select');
+  function fmtChangeCell(v){
+    if(v === null || v === undefined) return '<td>—</td>';
+    const cls = v > 0 ? 'dir-up' : (v < 0 ? 'dir-down' : 'dir-flat');
+    return `<td class="${cls}">${fmtBp(v)}</td>`;
+  }
+  function renderYieldChanges(){
+    const rows = (D.yield_changes && D.yield_changes[ycSel.value]) || {};
+    document.querySelector('#yield-changes-table tbody').innerHTML = TENOR_ORDER
+      .filter(t => rows[t])
+      .map(t => {
+        const e = rows[t];
+        return `<tr><td>${t}</td><td>${fmtPct(e.latest_yield)}</td>${fmtChangeCell(e.change_1w_bp)}${fmtChangeCell(e.change_1m_bp)}${fmtChangeCell(e.change_ytd_bp)}<td>${e.as_of}</td></tr>`;
+      }).join('');
+  }
+  ycSel.addEventListener('change', renderYieldChanges);
+  renderYieldChanges();
+
+  // 美國總經數據（FRED）：有資料顯示數據卡；無資料誠實顯示尚未設定
+  const macro = D.macro || {available:false, series:{}};
+  const fredEl = document.getElementById('macro-fred');
+  if(!macro.available){
+    fredEl.innerHTML = `<p class="sub">總經數據尚未啟用（資料管線未設定 FRED_API_KEY 或尚未抓取），此區塊留待啟用。免費申請：<a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" rel="noopener">FRED API Key</a>。</p>`;
+  } else {
+    const FRED_CARDS = [
+      ['cpi_yoy', 'CPI 年增率'],
+      ['core_pce_yoy', '核心 PCE 年增率'],
+      ['unemployment_rate', '失業率'],
+      ['sofr', 'SOFR'],
+    ];
+    let cards = FRED_CARDS.map(([key, label]) => {
+      const rows = macro.series[key] || [];
+      if(!rows.length) return '';
+      const last = rows[rows.length-1];
+      return `<div class="card">
+        <div class="cur"><span>${label}</span><span>US</span></div>
+        <div class="rate">${fmtPct(last.value)}</div>
+        <div class="sub">資料日 ${last.date}</div>
+      </div>`;
+    }).join('');
+    const rp = D.real_policy_rate;
+    if(rp){
+      const cls = rp.real_rate >= 0 ? 'dir-up' : 'dir-down';
+      cards += `<div class="card">
+        <div class="cur"><span>實質政策利率（政策利率 − CPI YoY）</span><span>US</span></div>
+        <div class="rate ${cls}">${fmtPct(rp.real_rate)}</div>
+        <div class="sub">政策利率 ${fmtPct(rp.policy_rate,3)}（${rp.policy_as_of}）− CPI ${fmtPct(rp.cpi_yoy)}（${rp.cpi_as_of}）</div>
+      </div>`;
+    }
+    fredEl.innerHTML = `<div class="card-grid">${cards}</div>
+      <div class="sub" style="font-size:12px;margin-top:8px;">來源：FRED（St. Louis Fed）公開統計，CPI／核心 PCE 為年增率換算值。</div>`;
+  }
+}
+
+// ── 分頁切換 ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-' + tab.dataset.view).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+# 網站 repo（weococreate/Global）的 .github/workflows/site.yml 正本；由 deploy_all.py 的 support_files 放入。
+# 2026-10-02 GlobalRates 雲端自動更新（AutoDeploy 計劃書 #github-cloud-update 第六節）：
+#   - 本機 deploy_all 推送到 main → 只發布整站（其他 8 頁照舊由本機更新）
+#   - 每天台北 06:30、18:30 排程 → GlobalRates 雲端更新，有變更才以 GITHUB_TOKEN 提交回 main，同一次執行發布
+#   - 手動執行 → 可選是否做雲端更新
+# 需先把 Pages 發布來源改為「GitHub Actions」；網址由 repo 名稱決定，不變。
+# 兩個 repo 變數當開關：PAGES_FROM_ACTIONS=true（切換發布來源時才設；未設前本工作流程完全不動作，舊的「從分支發布」照常）、
+# CLOUD_SCHEDULE_ENABLED=true（打開排程）。演講摘要與新台幣利率由本機產生後推上 .cloud/apps/GlobalRates/output/，雲端只讀。
+name: site
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 22,10 * * *'   # 台北 06:30（美國收盤後）、18:30（亞洲與歐洲資料出來後）
+  workflow_dispatch:
+    inputs:
+      update:
+        description: '執行 GlobalRates 雲端更新（不勾＝只發布整站）'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  update:
+    if: vars.PAGES_FROM_ACTIONS == 'true' && ((github.event_name == 'workflow_dispatch' && inputs.update) || (github.event_name == 'schedule' && vars.CLOUD_SCHEDULE_ENABLED == 'true'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.update.outputs.changed }}
+    env:
+      SITE_REPO_ROOT: ${{ github.workspace }}
+      APP: .cloud/apps/GlobalRates
+      CLOUD: .cloud/apps/GlobalRates/cloud
+      # fetch_rba.js（澳洲央行）用瀏覽器抓，從 cloud/node_modules 找 playwright
+      NODE_PATH: ${{ github.workspace }}/.cloud/apps/GlobalRates/cloud/node_modules
+      TZ: Asia/Taipei
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22.14.0'
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --quiet pytest==8.3.5
+      # 需 FinAtlas 共用庫的一項與需本機歷史資料回測的一項不在雲端跑。
+      - run: python -B -m pytest -q "$CLOUD"/test_run_cloud.py "$APP"/tests -k "not cbc_twd and not real_history"
+      - run: npm ci --prefix "$CLOUD" --ignore-scripts --no-audit --no-fund
+      # 瀏覽器存起來重複使用；有快取只補系統套件，沒快取才完整安裝。抓資料前就要裝好（澳洲央行要用）。
+      - id: pw-cache
+        uses: actions/cache@v4.2.3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('.cloud/apps/GlobalRates/cloud/package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: '"$CLOUD"/node_modules/.bin/playwright install --with-deps chromium'
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: '"$CLOUD"/node_modules/.bin/playwright install-deps chromium'
+      - id: update
+        run: python -B "$CLOUD"/run_cloud.py
+      - if: steps.update.outputs.changed == 'true'
+        run: node "$CLOUD"/browser-check.cjs GlobalRates.html
+      - if: steps.update.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add GlobalRates.html
+          test "$(git diff --cached --name-only)" = "GlobalRates.html"
+          git commit -m "雲端更新 GlobalRates 利率資料"
+          for i in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            git pull --rebase origin main || { git rebase --abort; exit 1; }
+          done
+          exit 1
+      - if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: globalrates-preview
+          path: preview-*.png
+          if-no-files-found: ignore
+          retention-days: 7
+  deploy:
+    needs: update
+    if: >-
+      !cancelled() && vars.PAGES_FROM_ACTIONS == 'true' && (
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && !inputs.update) ||
+        (needs.update.result == 'success' && needs.update.outputs.changed == 'true'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+      # 只發布對外網頁：與「從分支發布」時對外可見的檔案相同，不含 .github／.cloud。
+      - run: |
+          mkdir _site
+          rsync -a --exclude=.git --exclude=.github --exclude=.cloud --exclude=.gitignore --exclude=_site ./ _site/
+          test -f _site/index.html
+          test -z "$(find _site -type f ! -name '*.html')"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
