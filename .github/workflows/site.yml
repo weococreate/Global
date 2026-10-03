@@ -40,13 +40,13 @@ jobs:
       NODE_PATH: ${{ github.workspace }}/.cloud/apps/GlobalRates/cloud/node_modules
       TZ: Asia/Taipei
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.1
         with:
           ref: main
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: '22.14.0'
-      - uses: actions/setup-python@v5.6.0
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
       - run: python -m pip install --quiet pytest==8.3.5
@@ -55,7 +55,7 @@ jobs:
       - run: npm ci --prefix "$CLOUD" --ignore-scripts --no-audit --no-fund
       # 瀏覽器存起來重複使用；有快取只補系統套件，沒快取才完整安裝。抓資料前就要裝好（澳洲央行要用）。
       - id: pw-cache
-        uses: actions/cache@v4.2.3
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('.cloud/apps/GlobalRates/cloud/package-lock.json') }}
@@ -80,7 +80,7 @@ jobs:
           done
           exit 1
       - if: always()
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: globalrates-preview
           path: preview-*.png
@@ -102,7 +102,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.1
         with:
           ref: main
       # 只發布對外網頁：與「從分支發布」時對外可見的檔案相同，不含 .github／.cloud。
@@ -111,9 +111,9 @@ jobs:
           rsync -a --exclude=.git --exclude=.github --exclude=.cloud --exclude=.gitignore --exclude=_site ./ _site/
           test -f _site/index.html
           test -z "$(find _site -type f ! -name '*.html')"
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/configure-pages@v6.0.0
+      - uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5.0.1
