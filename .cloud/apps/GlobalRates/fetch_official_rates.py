@@ -133,6 +133,26 @@ OFFICIAL = {
 }
 
 
+RETRY_WAITS = (3, 8)   # 第 1、2 次失敗後各等幾秒再試；共最多 3 次
+
+
+def fetch_with_retry(fn, waits=None, sleep=None):
+    """官方來源偶發逾時很常見（2026-10-04 ECB 逾時一次，整班雲端更新因此作廢）。
+    失敗就等一下再試，全部失敗才把最後一個錯誤丟出去。"""
+    import time
+    sleep = sleep or time.sleep
+    waits = RETRY_WAITS if waits is None else waits   # 呼叫當下才取，測試才換得掉
+    last = None
+    for i in range(len(waits) + 1):
+        try:
+            return fn()
+        except Exception as e:   # 逾時、連線重設、來源暫時回錯都算
+            last = e
+            if i < len(waits):
+                sleep(waits[i])
+    raise last
+
+
 def rate_at(points, d):
     """points 舊到新；回傳生效日 ≤ d 的最後一個值，沒有則 None。"""
     val = None
@@ -175,9 +195,9 @@ def official_rows(bis_by_currency):
         if not bis:
             continue
         try:
-            points = fn()
+            points = fetch_with_retry(fn)
         except Exception as e:
-            print(f"  [WARN] {currency} 官方來源抓取失敗，只用 BIS：{e}", file=sys.stderr)
+            print(f"  [WARN] {currency} 官方來源試了 {len(RETRY_WAITS) + 1} 次都失敗，只用 BIS：{e}", file=sys.stderr)
             continue
         added = overlay(currency, bis, points)
         if added:

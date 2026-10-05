@@ -2,7 +2,7 @@
 """GlobalRates 雲端更新（AutoDeploy 計劃書 #github-cloud-update 第六節，2026-10-02）。
 
 在網站 repo（weococreate/Global）的 GitHub Actions 內執行；本機也可預演（加 --site 指向含 GlobalRates.html 的資料夾）。
-1. 抓政策利率、殖利率（必須成功）、FRED（失敗沿用舊檔，與本機日檢查相同）。三者每次都抓完整多年歷史、整份重寫，雲端不需保存歷史。
+1. 抓政策利率、殖利率（必須成功）、FRED（失敗沿用舊檔，與本機日檢查相同）。央行官方來源逾時會重試；重試後仍抓不到的幣別沿用線上已有的那幾天（carry_forward），不讓一個來源拖垮整班。三者每次都抓完整多年歷史、整份重寫，雲端不需保存歷史。
 2. gen_site_data.py 產生資料；新台幣利率讀 output/twd_policy.json、演講摘要讀 output/speeches_summary.json（兩者由本機推上）。
 3. 與網站 repo 現有 GlobalRates.html 的資料比對把關：貨幣與國家不得缺、日期不得倒退、筆數不得明顯變少、演講不得出現待摘要。
 4. 打包 → 依本機部署順序跑 GA4／免責／隱私注入器 → 以注入器 --check 確認、GA4／隱私／referrer 固定字串必在、外部腳本只放行 jsDelivr 的 Chart.js 與 GA4、不得含本機路徑。
@@ -71,6 +71,47 @@ def check_data(new, old):
     return bad
 
 
+# 有央行官方來源補位的幣別（與 fetch_official_rates.OFFICIAL 相同）。只有這些會因官方來源一時抓不到而「日期倒退」。
+CARRY_CURRENCIES = ("USD", "EUR", "GBP", "CAD", "CHF", "SEK", "AUD")
+CARRY_SOURCE = "carried-from-site"
+
+
+def carry_forward(csv_path, old):
+    """官方來源重試後仍抓不到時，該幣別沿用線上已有的那幾天，其餘幣別照常更新（2026-10-05）。
+    只補「這次 CSV 最後一天之後、到線上資料日為止」的日子，不往後捏造；頁面每個幣別本來就各自標資料日。
+    線上在 CSV 最後一天的值必須等於 CSV 的值才沿用，否則代表兩邊對不上，交給後面的日期倒退把關擋下。
+    回傳 [(幣別, 沿用起日, 沿用迄日), ...]。"""
+    import csv
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    summary = {p["currency"]: p for p in old.get("policy_summary", [])}
+    carried, extra = [], []
+    for cur in CARRY_CURRENCIES:
+        mine = sorted((r for r in rows if r["currency"] == cur and r["rate"] != ""), key=lambda r: r["date"])
+        old_hist = sorted(old.get("policy_history", {}).get(cur, []), key=lambda r: r["date"])
+        old_as_of = (summary.get(cur) or {}).get("as_of")
+        if not mine or not old_hist or not old_as_of or mine[-1]["date"] >= old_as_of:
+            continue
+        last = mine[-1]
+        at_last = [h for h in old_hist if h["date"] <= last["date"]]
+        if not at_last or abs(float(at_last[-1]["rate"]) - float(last["rate"])) > 1e-6:
+            print(f"  [WARN] {cur}：線上在 {last['date']} 的值與這次抓到的不同，不沿用")
+            continue
+        add = [h for h in old_hist if last["date"] < h["date"] <= old_as_of]
+        if not add:
+            continue
+        extra += [{"currency": cur, "date": h["date"], "rate": h["rate"], "source": CARRY_SOURCE} for h in add]
+        carried.append((cur, add[0]["date"], add[-1]["date"]))
+        print(f"  {cur}：官方來源這次抓不到，沿用線上 {add[0]['date']}～{add[-1]['date']} 共 {len(add)} 天")
+    if extra:
+        rows = sorted(rows + extra, key=lambda r: (r["currency"], r["date"]))
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["currency", "date", "rate", "source"])
+            w.writeheader()
+            w.writerows(rows)
+    return carried
+
+
 def check_html(html):
     bad = [f"缺少{name}" for name, mk in MARKERS.items() if mk not in html]
     others = re.findall(r'<script[^>]+\bsrc\s*=\s*"([^"]+)"', html, re.I)
@@ -113,6 +154,7 @@ def main(argv=None):
     py = sys.executable
     if not a.skip_fetch:
         run([py, "-B", "fetch_policy_rates.py"], APP)
+        carry_forward(APP / "output" / "policy_rates.csv", old)
         run([py, "-B", "fetch_yields.py"], APP)
         run([py, "-B", "fetch_fred.py"], APP, required=False)   # 本機日檢查同樣不因 FRED 失敗停
     run([py, "-B", "gen_site_data.py"], APP)

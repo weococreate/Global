@@ -107,3 +107,69 @@ def test_site_workflow_settings():
     assert '-k "not cbc_twd and not real_history"' in wf
     assert wf.index("playwright install") < wf.index('python -B "$CLOUD"/run_cloud.py')          # 澳洲央行抓取前瀏覽器要先裝好
     assert wf.count("install --with-deps chromium") == 1 and "actions/cache@" in wf
+
+
+# ── 2026-10-05：官方來源抓不到時沿用線上已有的值（10/04 EUR 日期倒退使整班作廢） ──
+
+def _csv(tmp_path, rows):
+    p = tmp_path / "policy_rates.csv"
+    p.write_text("currency,date,rate,source\n" + "".join(f"{c},{d},{r},{s}\n" for c, d, r, s in rows), encoding="utf-8")
+    return p
+
+
+def _old(eur_hist, as_of):
+    return {"policy_summary": [{"currency": "EUR", "as_of": as_of}, {"currency": "USD", "as_of": "2026-10-02"}],
+            "policy_history": {"EUR": [{"date": d, "rate": r} for d, r in eur_hist],
+                               "USD": [{"date": "2026-10-02", "rate": 3.875}]}}
+
+
+def test_carry_forward_fills_only_up_to_site_date(tmp_path):
+    """10/04 的實況：ECB 逾時，這次只有 BIS 到 09-29；線上已到 10-02 → 沿用 09-30～10-02，不往後捏造。"""
+    p = _csv(tmp_path, [("EUR", "2026-09-28", 2.5, "BIS"), ("EUR", "2026-09-29", 2.5, "BIS"), ("USD", "2026-10-02", 3.875, "FRED-official")])
+    old = _old([("2026-09-29", 2.5), ("2026-09-30", 2.5), ("2026-10-01", 2.5), ("2026-10-02", 2.5)], "2026-10-02")
+    assert rc.carry_forward(p, old) == [("EUR", "2026-09-30", "2026-10-02")]
+    lines = p.read_text(encoding="utf-8").splitlines()
+    eur = [l for l in lines if l.startswith("EUR,")]
+    assert [l.split(",")[1] for l in eur] == ["2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02"]
+    assert all(l.endswith(rc.CARRY_SOURCE) for l in eur[2:]) and eur[1].endswith("BIS")
+    assert len([l for l in lines if l.startswith("USD,")]) == 1   # 其他幣別不動
+
+
+def test_carry_forward_never_goes_past_site_date(tmp_path):
+    """線上歷史若有比資料日更晚的列（不該有，但不依賴它），也不沿用到資料日之後。"""
+    p = _csv(tmp_path, [("EUR", "2026-09-29", 2.5, "BIS")])
+    old = _old([("2026-09-29", 2.5), ("2026-10-01", 2.5), ("2026-10-09", 9.9)], "2026-10-01")
+    assert rc.carry_forward(p, old) == [("EUR", "2026-10-01", "2026-10-01")]
+    assert "2026-10-09" not in p.read_text(encoding="utf-8")
+
+
+def test_carry_forward_keeps_a_rate_change_already_on_site(tmp_path):
+    """線上已反映 09-30 升息；這次官方抓不到也不能退回舊利率。"""
+    p = _csv(tmp_path, [("EUR", "2026-09-29", 2.25, "BIS")])
+    old = _old([("2026-09-29", 2.25), ("2026-09-30", 2.5), ("2026-10-01", 2.5)], "2026-10-01")
+    rc.carry_forward(p, old)
+    assert p.read_text(encoding="utf-8").splitlines()[-1] == f"EUR,2026-10-01,2.5,{rc.CARRY_SOURCE}"
+
+
+def test_carry_forward_refuses_when_values_disagree(tmp_path):
+    """線上與這次在同一天的值不同＝兩邊對不上，不沿用；留給日期倒退把關擋下。"""
+    p = _csv(tmp_path, [("EUR", "2026-09-29", 2.25, "BIS")])
+    before = p.read_text(encoding="utf-8")
+    old = _old([("2026-09-29", 2.5), ("2026-10-02", 2.5)], "2026-10-02")
+    assert rc.carry_forward(p, old) == []
+    assert p.read_text(encoding="utf-8") == before
+
+
+def test_carry_forward_noop_when_not_behind(tmp_path):
+    p = _csv(tmp_path, [("EUR", "2026-10-05", 2.5, "ECB-official")])
+    before = p.read_text(encoding="utf-8")
+    assert rc.carry_forward(p, _old([("2026-10-02", 2.5)], "2026-10-02")) == []
+    assert p.read_text(encoding="utf-8") == before
+
+
+def test_carry_list_matches_official_sources():
+    """沿用名單與官方補位名單是同一批幣別；加減官方來源時兩邊要一起改。"""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import fetch_official_rates as fo
+    assert set(rc.CARRY_CURRENCIES) == set(fo.OFFICIAL)
+

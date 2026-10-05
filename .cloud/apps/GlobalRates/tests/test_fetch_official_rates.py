@@ -13,6 +13,8 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import fetch_official_rates as fo  # noqa: E402
 
+fo.RETRY_WAITS = (0, 0)   # 測試不真的等；次數（共 3 次）不變
+
 RBA_POINTS = [("2026-08-12", 4.35), ("2026-09-30", 4.60)]
 BIS_AUD = [("2026-09-23", 4.35), ("2026-09-24", 4.35)]
 
@@ -61,3 +63,43 @@ def test_official_rows_isolates_source_failure():
         rows = fo.official_rows(bis)
     assert {r[0] for r in rows} == {"AUD"}
     assert ("AUD", "2026-09-30", 4.60, "RBA-official") in rows
+
+
+# ── 2026-10-05：官方來源逾時重試（10/04 ECB 逾時一次，整班雲端更新作廢） ──
+
+def test_retry_succeeds_after_two_timeouts():
+    calls, waits = [], []
+    def flaky():
+        calls.append(1)
+        if len(calls) < 3:
+            raise TimeoutError("The read operation timed out")
+        return [("2026-10-02", 2.5)]
+    assert fo.fetch_with_retry(flaky, sleep=waits.append) == [("2026-10-02", 2.5)]
+    assert len(calls) == 3 and waits == list(fo.RETRY_WAITS)
+
+
+def test_retry_gives_up_and_raises_last_error():
+    calls = []
+    def dead():
+        calls.append(1)
+        raise TimeoutError(f"第 {len(calls)} 次")
+    try:
+        fo.fetch_with_retry(dead, sleep=lambda s: None)
+        assert False, "應該丟出錯誤"
+    except TimeoutError as e:
+        assert str(e) == "第 3 次"
+    assert len(calls) == len(fo.RETRY_WAITS) + 1
+
+
+def test_official_rows_uses_retry_and_other_currencies_unaffected():
+    """EUR 連三次逾時只略過 EUR；其他幣別照補。"""
+    n = {"eur": 0}
+    def eur():
+        n["eur"] += 1
+        raise TimeoutError("timed out")
+    official = {"EUR": ("ECB-official", eur), "AUD": ("RBA-official", lambda: RBA_POINTS)}
+    with patch.object(fo, "OFFICIAL", official), patch.object(fo, "RETRY_WAITS", (0, 0)):
+        rows = fo.official_rows({"EUR": [("2026-09-29", 2.5)], "AUD": BIS_AUD})
+    assert n["eur"] == 3
+    assert {r[0] for r in rows} == {"AUD"}
+
