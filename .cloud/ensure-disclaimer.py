@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""ensure-disclaimer.py — 免責聲明統一注入器（2026-09-01「上傳前雙查核」裁定）
+"""deploy/ensure-disclaimer.py — 免責聲明統一注入器（2026-09-01「上傳前雙查核」裁定）
 
-沿用 ensure-ga4.py 範式：**免責聲明的唯一定義處就是本檔**。要改文案、改樣式、
+沿用 deploy/ensure-ga4.py 範式：**免責聲明的唯一定義處就是本檔**。要改文案、改樣式、
 或全站拿掉，只改這裡再跑一次。
 
 為什麼用注入器而不是逐頁手改 footer：15 支頁面的頁尾結構完全不同——有的是
@@ -13,19 +13,19 @@
 fail-fast：找不到 `</body>` 直接非零退出，不靜默略過（那會產出「以為補了其實沒補」的頁面）。
 
 用法：
-  python3 ensure-disclaimer.py                 # 對 TARGETS 清單全補（開發版正本）
-  python3 ensure-disclaimer.py --manifest      # 對 deploy-manifest.json 全白名單「部署檔」全補
+  python3 deploy/ensure-disclaimer.py                 # 對 TARGETS 清單全補（開發版正本）
+  python3 deploy/ensure-disclaimer.py --manifest      # 對 deploy-manifest.json 全白名單「部署檔」全補
                                                #   （deploy_all.py 部署前跑這個模式，與 ensure-ga4 對稱）
-  python3 ensure-disclaimer.py a.html b.html   # 指定檔
-  python3 ensure-disclaimer.py --check [檔...]  # 只檢查，缺則 exit 1
-  python3 ensure-disclaimer.py --force [檔...]  # 改過文案/樣式後，重寫既有區塊
+  python3 deploy/ensure-disclaimer.py a.html b.html   # 指定檔
+  python3 deploy/ensure-disclaimer.py --check [檔...]  # 只檢查，缺則 exit 1
+  python3 deploy/ensure-disclaimer.py --force [檔...]  # 改過文案/樣式後，重寫既有區塊
 
 兩種清單的差別：TARGETS 是**開發版正本**（改了要重跑 build-*-deploy.js 才會進部署檔）；
 --manifest 是**部署檔產物**（deploy_all 部署前的最後保險，防止某支正本漏加）。
 """
 import sys, os, re, json
 
-DIR = os.path.dirname(os.path.abspath(__file__))
+DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MARK = 'data-disclaimer="weoco"'
 
 # 文案：通用於資料視覺化頁（不限投資類），故用「專業建議」而非「投資建議」。
@@ -111,7 +111,7 @@ def inject(path, check_only=False, force=False):
 
 
 def manifest_files():
-    """deploy-manifest.json 白名單的部署檔（與 ensure-ga4.py 無參數時的範圍一致）。"""
+    """deploy-manifest.json 白名單的部署檔（與 deploy/ensure-ga4.py 無參數時的範圍一致）。"""
     mf = json.load(open(os.path.join(DIR, 'deploy-manifest.json'), encoding='utf-8'))
     return [f['local'] for r in mf['repos'] for f in r['files']]
 

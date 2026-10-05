@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""ensure-ga4.py — GA4 追蹤碼「單一來源」＋冪等注入器。
+"""deploy/ensure-ga4.py — GA4 追蹤碼「單一來源」＋冪等注入器。
 
 這是全站 GA4 內容的唯一定義處。要換 Measurement ID、加自訂事件、
 或哪天想全站拔掉 GA，只改本檔即可，不必動任何 HTML。
 
 用法：
-    python3 ensure-ga4.py                 # 對 deploy-manifest.json 全部白名單檔注入（缺才補，冪等）
-    python3 ensure-ga4.py a.html b.html   # 只對指定檔注入
-    python3 ensure-ga4.py --check         # 只檢查不改；有檔缺 GA4 則 exit 1（列出缺的）
+    python3 deploy/ensure-ga4.py                 # 對 deploy-manifest.json 全部白名單檔注入（缺才補，冪等）
+    python3 deploy/ensure-ga4.py a.html b.html   # 只對指定檔注入
+    python3 deploy/ensure-ga4.py --check         # 只檢查不改；有檔缺 GA4 則 exit 1（列出缺的）
 
 被 deploy_all.py 於部署前呼叫（無參數模式），確保每個要推的檔都已含 GA4。
 冪等：已含者原樣跳過，永不重複注入。單一自足鐵則相容——注入的是 inline script，
@@ -35,7 +35,7 @@ gtag('config', '{GA4_ID}');
 """
 # ────────────────────────────────────────────────────────────
 
-AGENT_DIR = Path(__file__).resolve().parent
+AGENT_DIR = Path(__file__).resolve().parents[1]
 
 
 def has_ga4(html: str) -> bool:

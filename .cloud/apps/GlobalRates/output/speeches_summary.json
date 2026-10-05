@@ -1,12 +1,12 @@
 [
   {
-    "currency": "EUR",
-    "institution": "European Central Bank",
-    "speaker": "Christine Lagarde",
-    "title": "Hearing of the Committee on Economic and Monetary Affairs of the European Parliament",
-    "url": "https://www.bis.org/speeches/20260930-hearing-committee-economic-and-monetary-affairs-european-parliament",
-    "description": "Speech by Ms Christine Lagarde, President of the European Central Bank, at the Hearing of the Committee on Economic and Monetary Affairs of the European Parliament, Brussels, 28 September 2026.",
-    "date": "2026-09-30",
+    "currency": "USD",
+    "institution": "Federal Reserve System",
+    "speaker": "Christopher J Waller",
+    "title": "Payments in the age of AI agents",
+    "url": "https://www.bis.org/speeches/20261005-payments-age-ai-agents",
+    "description": "Speech by Mr Christopher J Waller, Member of the Board of Governors of the Federal Reserve System, at Sibos 2026, Miami, Florida, 29 September 2026.",
+    "date": "2026-10-05",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
   },
@@ -22,13 +22,13 @@
     "summarized_by": "pending"
   },
   {
-    "currency": "CHF",
-    "institution": "SNB",
-    "speaker": "Martin Schlegel",
-    "title": "Introductory remarks by the Governing Board, Swiss National Bank news conference",
-    "url": "https://www.bis.org/speeches/20260929-introductory-remarks-governing-board-swiss-national-bank-news-conference",
-    "description": "Introductory remarks by Mr Martin Schlegel, Chairman of the Governing Board of the SNB, Mr Antoine Martin, Vice Chairman of the Governing Board of the SNB, and Ms Petra Tschudin, Member of the Governing Board of the SNB, at the Media News Conference of the Swiss National Bank, Berne, 24 September 2026.",
-    "date": "2026-09-29",
+    "currency": "EUR",
+    "institution": "European Central Bank",
+    "speaker": "Christine Lagarde",
+    "title": "Hearing of the Committee on Economic and Monetary Affairs of the European Parliament",
+    "url": "https://www.bis.org/speeches/20260930-hearing-committee-economic-and-monetary-affairs-european-parliament",
+    "description": "Speech by Ms Christine Lagarde, President of the European Central Bank, at the Hearing of the Committee on Economic and Monetary Affairs of the European Parliament, Brussels, 28 September 2026.",
+    "date": "2026-09-30",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
   },
@@ -39,6 +39,17 @@
     "title": "An update on AI and the economy",
     "url": "https://www.bis.org/speeches/20260929-update-ai-and-economy",
     "description": "Opening keynote by Ms Lisa D Cook, Member of the Board of Governors of the Federal Reserve System, at the Oakland Tech Week, cohosted by the Kapor Center, Oakland, California, 28 September 2026.",
+    "date": "2026-09-29",
+    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
+    "summarized_by": "pending"
+  },
+  {
+    "currency": "CHF",
+    "institution": "SNB",
+    "speaker": "Martin Schlegel",
+    "title": "Introductory remarks by the Governing Board, Swiss National Bank news conference",
+    "url": "https://www.bis.org/speeches/20260929-introductory-remarks-governing-board-swiss-national-bank-news-conference",
+    "description": "Introductory remarks by Mr Martin Schlegel, Chairman of the Governing Board of the SNB, Mr Antoine Martin, Vice Chairman of the Governing Board of the SNB, and Ms Petra Tschudin, Member of the Governing Board of the SNB, at the Media News Conference of the Swiss National Bank, Berne, 24 September 2026.",
     "date": "2026-09-29",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
@@ -110,17 +121,6 @@
     "summarized_by": "pending"
   },
   {
-    "currency": "AUD",
-    "institution": "Reserve Bank of Australia",
-    "speaker": "Michele Bullock",
-    "title": "Opening statement - House of Representatives Standing Committee on Economics",
-    "url": "https://www.bis.org/speeches/20260922-opening-statement-house-representatives-standing-committee-economics",
-    "description": "Opening statement by Ms Michele Bullock, Governor of the Reserve Bank of Australia, to the House of Representatives Standing Committee on Economics, Canberra, 18 September 2026.",
-    "date": "2026-09-22",
-    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
-    "summarized_by": "pending"
-  },
-  {
     "currency": "EUR",
     "institution": "European Central Bank",
     "speaker": "Christine Lagarde",
@@ -143,13 +143,13 @@
     "summarized_by": "pending"
   },
   {
-    "currency": "SEK",
-    "institution": "Sveriges Riksbank",
-    "speaker": "Anna Seim",
-    "title": "What is money?",
-    "url": "https://www.bis.org/speeches/20260921-what-money",
-    "description": "Speech by Ms Anna Seim, Deputy Governor of the Sveriges Riksbank, at the Economy Museum, Stockholm, 9 September 2026.",
-    "date": "2026-09-21",
+    "currency": "AUD",
+    "institution": "Reserve Bank of Australia",
+    "speaker": "Michele Bullock",
+    "title": "Opening statement - House of Representatives Standing Committee on Economics",
+    "url": "https://www.bis.org/speeches/20260922-opening-statement-house-representatives-standing-committee-economics",
+    "description": "Opening statement by Ms Michele Bullock, Governor of the Reserve Bank of Australia, to the House of Representatives Standing Committee on Economics, Canberra, 18 September 2026.",
+    "date": "2026-09-22",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
   }

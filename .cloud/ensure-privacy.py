@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""ensure-privacy.py — 公開頁的隱私聲明「單一來源」＋冪等注入器（2026-09-02 建立）。
+"""deploy/ensure-privacy.py — 公開頁的隱私聲明「單一來源」＋冪等注入器（2026-09-02 建立）。
 
 為什麼要有（2026-09-02 GitHub／Cloudflare 流程體檢）：
   GitHub Pages 上的 25 支公開頁**每一支都掛著 GA4**，卻**沒有任何一支**寫了隱私權說明。
@@ -12,7 +12,7 @@
   GitHub Pages 不能自訂 HTTP 標頭（Cloudflare 那站由 _worker.js 加），
   meta 是那邊唯一能設 Referrer-Policy 的地方，避免站內路徑被帶到外部連結的對方伺服器。
 
-設計比照 ensure-ga4.py：本檔是聲明內容的唯一定義處，要改文字只改這裡，不必動任何 HTML。
+設計比照 deploy/ensure-ga4.py：本檔是聲明內容的唯一定義處，要改文字只改這裡，不必動任何 HTML。
 冪等：已含標記者原樣跳過，永不重複注入。純 HTML／inline style，
 不引入任何外部資源，相容「單一自足」鐵則。
 
@@ -20,10 +20,10 @@
    Cloudflare 銀行資料站是 Access 限人的自用站、且不掛 GA4，不在此列。
 
 用法：
-    python3 ensure-privacy.py                 # 對白名單全檔注入（缺才補，冪等）
-    python3 ensure-privacy.py a.html b.html   # 只對指定檔注入
-    python3 ensure-privacy.py --check         # 只檢查不改；有檔缺則 exit 1
-    python3 ensure-privacy.py --selftest      # 對抗驗證（冪等與注入正確性）
+    python3 deploy/ensure-privacy.py                 # 對白名單全檔注入（缺才補，冪等）
+    python3 deploy/ensure-privacy.py a.html b.html   # 只對指定檔注入
+    python3 deploy/ensure-privacy.py --check         # 只檢查不改；有檔缺則 exit 1
+    python3 deploy/ensure-privacy.py --selftest      # 對抗驗證（冪等與注入正確性）
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ NOTICE = f"""<details {MARKER} style="max-width:960px;margin:24px auto 40px;padd
 """
 # ────────────────────────────────────────────────────────────
 
-AGENT_DIR = Path(__file__).resolve().parent
+AGENT_DIR = Path(__file__).resolve().parents[1]
 
 
 def has_notice(html: str) -> bool:

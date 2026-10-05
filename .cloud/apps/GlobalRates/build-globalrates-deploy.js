@@ -7,7 +7,7 @@
  *    - Chart.js 走 jsdelivr CDN＋SRI（刻意保留、非漏網），故 allowExternal 放行 cdn.jsdelivr.net。
  *    - 發佈檔不引用內部腳本檔名（防洩漏 internal-doc）：去掉資料檔首行「// 自動產生…來源：…」註解。
  *
- *  --check：只驗「快照是否已與開發版同步」，不覆寫；落後即非零退出（供 CI／收工自檢／bey gr-snapshot --check）。
+ *  --check：只驗「快照是否已與開發版同步」，不覆寫；落後即非零退出（供 CI／收工自檢）。
  *
  *  2026-07-15 收斂：本檔取代舊 make_globalrates_snapshot.py 與 deploy_all.py 內寫死的 regen hook，
  *  內嵌邏輯自此只有這一處（見 AutoDeploy自動部署計劃書.md §2）。 */
