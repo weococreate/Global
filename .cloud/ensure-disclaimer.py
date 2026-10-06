@@ -46,6 +46,44 @@ BLOCK = (
     '</div>\n'
 )
 
+# Taiwan 站專用文案（2026-10-06 使用者要求）：公開頁要寫明「與 Claude Code 協作、利用台灣公開資料的練習」。
+# 只套用在 deploy-manifest.json 的 Taiwan 站頁面與其開發版；Global 站與 Cloudflare 銀行站沿用上面的 BLOCK
+# （那些頁面的資料不是台灣政府公開資料，套同一句會失實）。樣式與 BLOCK 完全相同，只換文字。
+BLOCK_TW = BLOCK[:BLOCK.index('<strong')] + (
+    '<strong style="color:#39404b">免責聲明</strong>：本頁是個人與 Claude Code（Anthropic 的 AI 程式開發工具）協作、'
+    '利用台灣政府開放資料與其他公開資料所做的練習作品，非商業用途，不代表任何機關或機構立場。'
+    '內容僅供參考，不構成任何專業建議。資料由程式自動彙整，文字說明部分由 AI 協助撰寫，'
+    '可能有解析誤差、統計範圍差異或未及更新之處；實際資訊請以各主管機關公布為準，'
+    '使用本頁內容所作的判斷與結果由使用者自行負責。'
+    '</div>\n'
+)
+
+
+def _taiwan_stems():
+    """Taiwan 站頁面的檔名主幹（部署版 X.html 與開發版 X1.html 都算）。清單讀不到就回空集合＝全部用 BLOCK。"""
+    try:
+        mf = json.load(open(os.path.join(DIR, 'deploy-manifest.json'), encoding='utf-8'))
+    except (OSError, ValueError):
+        return set()
+    stems = set()
+    for r in mf.get('repos', []):
+        if r.get('name') == 'Taiwan':
+            for f in r.get('files', []):
+                stems.add(os.path.splitext(os.path.basename(f['local']))[0])
+    return stems
+
+
+TAIWAN_STEMS = _taiwan_stems()
+
+
+def is_taiwan(path):
+    # 雲端（網站 repo 的 .cloud/）沒有部署清單可查，由工作流程以環境變數指明這是 Taiwan 站。
+    if os.environ.get('DISCLAIMER_SITE') == 'Taiwan':
+        return True
+    stem = os.path.splitext(os.path.basename(path))[0]
+    return stem in TAIWAN_STEMS or (stem.endswith('1') and stem[:-1] in TAIWAN_STEMS)
+
+
 # 預設清單：已上線但缺免責的頁面（2026-09-01 盤點）。
 # 有 build-*-deploy.js 的 app 一律填「開發版 XXX1.html」——那才是正本，
 # 改完要重跑打包器；部署版直接改會被下次打包覆蓋（feedback_edit_generator_not_artifact）。
@@ -95,9 +133,12 @@ def inject(path, check_only=False, force=False):
         print(f"  ❌ 找不到檔案：{path}")
         return 'error'
     html = open(full, encoding='utf-8').read()
+    tw = is_taiwan(path)
+    block = BLOCK_TW if tw else BLOCK
     if force and MARK in html:
         html = BLOCK_RE.sub('', html)          # 先拆掉舊的，下面照正常流程重新注入
-    elif has_block(html):
+    elif MARK in html or (not tw and has_block(html)):
+        # Taiwan 站一律要有本檔注入的區塊（頁面自己寫的免責不含「與 Claude Code 協作的練習」那句，不能頂替）。
         return 'ok'
     if check_only:
         return 'would-add'
@@ -106,7 +147,7 @@ def inject(path, check_only=False, force=False):
         print(f"  ❌ {path} 找不到 </body>，無法注入（不靜默略過）")
         return 'error'
     at = m[-1].start()
-    open(full, 'w', encoding='utf-8').write(html[:at] + BLOCK + html[at:])
+    open(full, 'w', encoding='utf-8').write(html[:at] + block + html[at:])
     return 'added'
 
 
