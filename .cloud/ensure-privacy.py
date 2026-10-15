@@ -45,7 +45,9 @@ NOTICE = f"""<details {MARKER} style="max-width:960px;margin:24px auto 40px;padd
 """
 # ────────────────────────────────────────────────────────────
 
-AGENT_DIR = Path(__file__).resolve().parents[1]
+# 專案根目錄：往上找有 deploy-manifest.json 的那一層。這支也會被推上網站 repo 的 .cloud/ 在雲端執行，那裡沒有本機的根目錄標記檔，
+# 所以不用標記檔、找不到也不在載入時中止（退回上一層目錄），只有真的要讀清單時才會報錯；檔內也不能出現登入帳號名（防洩漏掃描會擋）。
+AGENT_DIR = next((p for p in list(Path(__file__).resolve().parents)[:4] if (p / 'deploy-manifest.json').is_file()), Path(__file__).resolve().parents[1])
 
 
 def has_notice(html: str) -> bool:

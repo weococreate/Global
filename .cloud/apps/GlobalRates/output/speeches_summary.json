@@ -1,5 +1,27 @@
 [
   {
+    "currency": "EUR",
+    "institution": "European Central Bank",
+    "speaker": "Piero Cipollone",
+    "title": "Money in the digital age - digital euro, tokenisation and the role of central banks",
+    "url": "https://www.bis.org/speeches/20261013-money-digital-age-digital-euro-tokenisation-and-role-central-banks",
+    "description": "Speech by Mr Piero Cipollone, Member of the Executive Board of the European Central Bank, at the MNI Connect Webcast, Frankfurt am Main, 6 October 2026.",
+    "date": "2026-10-13",
+    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
+    "summarized_by": "pending"
+  },
+  {
+    "currency": "USD",
+    "institution": "Federal Reserve System",
+    "speaker": "Christopher J Waller",
+    "title": "The signaling value of the summary of economic projections",
+    "url": "https://www.bis.org/speeches/20261013-signaling-value-summary-economic-projections",
+    "description": "Speech by Mr Christopher J Waller, Member of the Board of Governors of the Federal Reserve System, at the Istanbul Economic Forum, organised by the Central Bank of the Republic of Türkiye, Istanbul, 8 October 2026.",
+    "date": "2026-10-13",
+    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
+    "summarized_by": "pending"
+  },
+  {
     "currency": "ZAR",
     "institution": "South African Reserve Bank",
     "speaker": "Fundi Tshazibana",
@@ -7,17 +29,6 @@
     "url": "https://www.bis.org/speeches/20261008-sustainable-finance-and-shifting-risk-landscape",
     "description": "Address by Ms Fundi Tshazibana, Deputy Governor of the South African Reserve Bank, at the Bloomberg Sustainable Finance Conversations, Bloomberg, Johannesburg, 30 September 2026.",
     "date": "2026-10-08",
-    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
-    "summarized_by": "pending"
-  },
-  {
-    "currency": "CAD",
-    "institution": "Bank of Canada",
-    "speaker": "Carolyn Rogers",
-    "title": "Canada’s housing affordability dilemma",
-    "url": "https://www.bis.org/speeches/20261007-canadas-housing-affordability-dilemma",
-    "description": "Remarks by Ms Carolyn Rogers, Senior Deputy Governor of the Bank of Canada, to the Greater Victoria Chamber of Commerce and CFA Society Victoria, Victoria, British Columbia, 1 October 2026.",
-    "date": "2026-10-07",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
   },
@@ -72,6 +83,17 @@
     "title": "Monetary policy in a world of overlapping shocks",
     "url": "https://www.bis.org/speeches/20261007-monetary-policy-world-overlapping-shocks",
     "description": "Speech by Ms Isabel Schnabel, Member of the Executive Board of the European Central Bank, at the 8th Capital Markets Seminar, co-hosted by the European Commission, European Investment Bank and the European Stability Mechanism, Luxembourg, 30 September 2026.",
+    "date": "2026-10-07",
+    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
+    "summarized_by": "pending"
+  },
+  {
+    "currency": "CAD",
+    "institution": "Bank of Canada",
+    "speaker": "Carolyn Rogers",
+    "title": "Canada’s housing affordability dilemma",
+    "url": "https://www.bis.org/speeches/20261007-canadas-housing-affordability-dilemma",
+    "description": "Remarks by Ms Carolyn Rogers, Senior Deputy Governor of the Bank of Canada, to the Greater Victoria Chamber of Commerce and CFA Society Victoria, Victoria, British Columbia, 1 October 2026.",
     "date": "2026-10-07",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
@@ -150,17 +172,6 @@
     "url": "https://www.bis.org/speeches/20261005-payments-age-ai-agents",
     "description": "Speech by Mr Christopher J Waller, Member of the Board of Governors of the Federal Reserve System, at Sibos 2026, Miami, Florida, 29 September 2026.",
     "date": "2026-10-05",
-    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
-    "summarized_by": "pending"
-  },
-  {
-    "currency": "EUR",
-    "institution": "Supervisory Board of the European Central Bank",
-    "speaker": "Claudia Buch",
-    "title": "Digital innovation - hindrance or booster for banks’ business models?",
-    "url": "https://www.bis.org/speeches/20260930-digital-innovation-hindrance-or-booster-banks-business-models",
-    "description": "Keynote speech by Prof Claudia Buch, Chair of the Supervisory Board of the European Central Bank, at the, annual Foreign Bankers’ Association of the Netherlands conference, Amsterdam, 22 September 2026.",
-    "date": "2026-09-30",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
   }

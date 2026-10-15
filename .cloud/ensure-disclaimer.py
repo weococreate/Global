@@ -23,9 +23,12 @@ fail-fast：找不到 `</body>` 直接非零退出，不靜默略過（那會產
 兩種清單的差別：TARGETS 是**開發版正本**（改了要重跑 build-*-deploy.js 才會進部署檔）；
 --manifest 是**部署檔產物**（deploy_all 部署前的最後保險，防止某支正本漏加）。
 """
+from pathlib import Path
 import sys, os, re, json
 
-DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 專案根目錄：往上找有 deploy-manifest.json 的那一層。這支也會被推上網站 repo 的 .cloud/ 在雲端執行，那裡沒有本機的根目錄標記檔，
+# 所以不用標記檔、找不到也不在載入時中止（退回上一層目錄），只有真的要讀清單時才會報錯；檔內也不能出現登入帳號名（防洩漏掃描會擋）。
+DIR = str(next((p for p in list(Path(__file__).resolve().parents)[:4] if (p / 'deploy-manifest.json').is_file()), Path(__file__).resolve().parents[1]))
 MARK = 'data-disclaimer="weoco"'
 
 # 文案：通用於資料視覺化頁（不限投資類），故用「專業建議」而非「投資建議」。
