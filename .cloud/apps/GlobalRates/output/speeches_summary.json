@@ -163,16 +163,5 @@
     "date": "2026-10-06",
     "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
     "summarized_by": "pending"
-  },
-  {
-    "currency": "USD",
-    "institution": "Federal Reserve System",
-    "speaker": "Christopher J Waller",
-    "title": "Payments in the age of AI agents",
-    "url": "https://www.bis.org/speeches/20261005-payments-age-ai-agents",
-    "description": "Speech by Mr Christopher J Waller, Member of the Board of Governors of the Federal Reserve System, at Sibos 2026, Miami, Florida, 29 September 2026.",
-    "date": "2026-10-05",
-    "summary_raw": "[待摘要：本機無 ANTHROPIC_API_KEY，需人工或有金鑰的 session 補上]",
-    "summarized_by": "pending"
   }
 ]
