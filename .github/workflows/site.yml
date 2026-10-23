@@ -6,6 +6,7 @@
 # 需先把 Pages 發布來源改為「GitHub Actions」；網址由 repo 名稱決定，不變。
 # 兩個 repo 變數當開關：PAGES_FROM_ACTIONS=true（切換發布來源時才設；未設前本工作流程完全不動作，舊的「從分支發布」照常）、
 # CLOUD_SCHEDULE_ENABLED=true（打開排程）。演講摘要與新台幣利率由本機產生後推上 .cloud/apps/GlobalRates/output/，雲端只讀。
+# 2026-10-23 資安體檢第 3 項：第三方動作改釘 commit 編號（標籤可被重新指向，commit 不能）；註解保留原版本號，升版時兩邊一起改。
 name: site
 on:
   push:
@@ -40,13 +41,13 @@ jobs:
       NODE_PATH: ${{ github.workspace }}/.cloud/apps/GlobalRates/cloud/node_modules
       TZ: Asia/Taipei
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22.14.0'
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - run: python -m pip install --quiet pytest==8.3.5
@@ -55,7 +56,7 @@ jobs:
       - run: npm ci --prefix "$CLOUD" --ignore-scripts --no-audit --no-fund
       # 瀏覽器存起來重複使用；有快取只補系統套件，沒快取才完整安裝。抓資料前就要裝好（澳洲央行要用）。
       - id: pw-cache
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('.cloud/apps/GlobalRates/cloud/package-lock.json') }}
@@ -80,7 +81,7 @@ jobs:
           done
           exit 1
       - if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: globalrates-preview
           path: preview-*.png
@@ -102,7 +103,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
       # 只發布對外網頁：與「從分支發布」時對外可見的檔案相同，不含 .github／.cloud。
@@ -111,9 +112,9 @@ jobs:
           rsync -a --exclude=.git --exclude=.github --exclude=.cloud --exclude=.gitignore --exclude=_site ./ _site/
           test -f _site/index.html
           test -z "$(find _site -type f ! -name '*.html')"
-      - uses: actions/configure-pages@v6.0.0
-      - uses: actions/upload-pages-artifact@v5.0.0
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v5.0.1
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
